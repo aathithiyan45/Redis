@@ -1,39 +1,54 @@
 package com.example.demo.service;
 
+import com.example.demo.model.Student;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 @Service
 public class StudentService {
 
+    private final Map<Long, Student> students = new ConcurrentHashMap<>();
+    private final AtomicLong idGenerator = new AtomicLong();
+
+    public Student createStudent(Student student) {
+        Long id = idGenerator.incrementAndGet();
+        student.setId(id);
+        students.put(id, student);
+        return student;
+    }
+
     @Cacheable(value = "students", key = "#id")
-    public String getStudent(Long id) {
+    public Student getStudent(Long id) {
+        Student student = students.get(id);
 
-        System.out.println("Fetching student from database...");
-
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        if (student == null) {
+            throw new IllegalArgumentException("Student not found: " + id);
         }
 
-        return "Student-" + id;
+        return student;
     }
-    @CacheEvict(value = "students", key = "#id")
-    public String deleteStudent(Long id) {
 
-        System.out.println("Deleting student from database...");
-
-        return "Student-" + id + " deleted";
-    }
     @CachePut(value = "students", key = "#id")
-    public String updateStudent(Long id) {
+    public Student updateStudent(Long id, Student updatedStudent) {
+        if (!students.containsKey(id)) {
+            throw new IllegalArgumentException("Student not found: " + id);
+        }
 
-        System.out.println("Updating student...");
-
-        return "Updated-Student-" + id;
+        updatedStudent.setId(id);
+        students.put(id, updatedStudent);
+        return updatedStudent;
     }
 
+    @CacheEvict(value = "students", key = "#id")
+    public void deleteStudent(Long id) {
+        if (students.remove(id) == null) {
+            throw new IllegalArgumentException("Student not found: " + id);
+        }
+    }
 }

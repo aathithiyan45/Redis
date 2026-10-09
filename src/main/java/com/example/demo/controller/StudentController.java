@@ -1,8 +1,11 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.Student;
 import com.example.demo.service.StudentService;
-import org.springframework.cache.annotation.CachePut;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/students")
@@ -14,16 +17,27 @@ public class StudentController {
         this.studentService = studentService;
     }
 
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Student createStudent(@RequestBody Student student) {
+        return studentService.createStudent(student);
+    }
+
     @GetMapping("/{id}")
-    public String getStudent(@PathVariable Long id) {
+    public Student getStudent(@PathVariable Long id) {
         return studentService.getStudent(id);
     }
-    @DeleteMapping("/{id}")
-    public String deleteStudent(@PathVariable Long id) {
-        return studentService.deleteStudent(id);
-    }
+
     @PutMapping("/{id}")
-    public String updateStudent(@PathVariable Long id) {
-        return studentService.updateStudent(id);
+    public Student updateStudent(
+            @PathVariable Long id,
+            @RequestBody Student student) {
+        return studentService.updateStudent(id, student);
+    }
+
+    @DeleteMapping("/{id}")
+    public Map<String, String> deleteStudent(@PathVariable Long id) {
+        studentService.deleteStudent(id);
+        return Map.of("message", "Student deleted successfully");
     }
 }
